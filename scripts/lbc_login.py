@@ -1,73 +1,71 @@
 """
 scripts/lbc_login.py
-Se connecte à un Chrome existant en mode debug pour récupérer les cookies leboncoin.
-Contourne Datadome car on utilise le vrai Chrome de l'utilisateur.
+Sauvegarde les cookies leboncoin exportés via Cookie-Editor (Firefox/Chrome).
 
-Étapes :
-1. Fermer tous les Chrome ouverts
-2. Lancer Chrome en mode debug avec la commande indiquée
-3. Se connecter à leboncoin dans ce Chrome
-4. Lancer ce script pour sauvegarder la session
+Utilisation :
+1. Ouvre Firefox et connecte-toi à leboncoin
+2. Clique sur l'icône Cookie-Editor → Export → copie le JSON
+3. Lance ce script : python scripts/lbc_login.py
+4. Colle le JSON quand demandé, puis Entrée deux fois
 """
 
-import asyncio
 import json
+import sys
 from pathlib import Path
-from playwright.async_api import async_playwright
 
 COOKIES_FILE = Path(__file__).resolve().parents[1] / "data" / "processed" / "lbc_cookies.json"
-DEBUG_URL = "http://localhost:9222"
 
 
-async def main():
-    print("=" * 60)
-    print("  Récupération session leboncoin depuis Chrome existant")
-    print("=" * 60)
+def main():
+    print("=" * 55)
+    print("  Sauvegarde session leboncoin — Cookie-Editor")
+    print("=" * 55)
     print()
-    print("PRÉREQUIS : Chrome doit être lancé en mode debug.")
+    print("Colle le JSON exporté depuis Cookie-Editor,")
+    print("puis appuie deux fois sur Entrée :")
     print()
-    print("Si ce n'est pas encore fait, ferme tous les Chrome")
-    print("et lance cette commande dans un autre PowerShell :")
+
+    lines = []
+    try:
+        while True:
+            line = input()
+            if line == "" and lines and lines[-1] == "":
+                break
+            lines.append(line)
+    except EOFError:
+        pass
+
+    raw = "\n".join(lines).strip()
+    if not raw:
+        print("❌ Aucun contenu collé.")
+        sys.exit(1)
+
+    try:
+        cookies = json.loads(raw)
+    except json.JSONDecodeError as e:
+        print(f"❌ JSON invalide : {e}")
+        sys.exit(1)
+
+    if not isinstance(cookies, list):
+        print("❌ Le JSON doit être une liste de cookies.")
+        sys.exit(1)
+
+    # Vérifie qu'on a bien le cookie datadome
+    names = [c.get("name") for c in cookies]
+    if "datadome" not in names:
+        print("⚠️  Cookie 'datadome' absent — assure-toi d'être sur leboncoin.fr avant d'exporter.")
+
+    COOKIES_FILE.parent.mkdir(parents=True, exist_ok=True)
+    # Normalise le format pour notre scraper
+    normalized = [{"name": c["name"], "value": c["value"], "domain": c.get("domain", ".leboncoin.fr")} for c in cookies]
+    with open(COOKIES_FILE, "w") as f:
+        json.dump(normalized, f, indent=2)
+
     print()
-    print('  & "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"')
-    print('    --remote-debugging-port=9222')
-    print('    --user-data-dir="C:\\Users\\kevin\\AppData\\Local\\Google\\Chrome\\User Data"')
+    print(f"✅ {len(cookies)} cookies sauvegardés → {COOKIES_FILE}")
     print()
-    print("Connecte-toi à leboncoin dans ce Chrome.")
-    print()
-    input("Appuie sur Entrée quand tu es connecté à leboncoin...")
-
-    async with async_playwright() as p:
-        try:
-            browser = await p.chromium.connect_over_cdp(DEBUG_URL)
-        except Exception as e:
-            print()
-            print(f"❌ Impossible de se connecter à Chrome : {e}")
-            print()
-            print("Vérifie que Chrome est bien lancé avec --remote-debugging-port=9222")
-            return
-
-        # Récupère le contexte existant (ta vraie session Chrome)
-        contexts = browser.contexts
-        if not contexts:
-            print("❌ Aucun contexte trouvé dans Chrome.")
-            return
-
-        ctx = contexts[0]
-        cookies = await ctx.cookies("https://www.leboncoin.fr")
-
-        if not cookies:
-            print("❌ Aucun cookie leboncoin trouvé. Es-tu bien connecté sur leboncoin ?")
-            return
-
-        COOKIES_FILE.parent.mkdir(parents=True, exist_ok=True)
-        with open(COOKIES_FILE, "w") as f:
-            json.dump(cookies, f, indent=2)
-
-        print()
-        print(f"✅ Session sauvegardée — {len(cookies)} cookies leboncoin")
-        print(f"   Fichier : {COOKIES_FILE}")
+    print("Tu peux maintenant lancer la recherche leboncoin depuis Streamlit.")
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
