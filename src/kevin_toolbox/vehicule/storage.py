@@ -31,9 +31,16 @@ def get_conn(path: Path = DEFAULT_DB) -> sqlite3.Connection:
             description  TEXT,
             score        REAL,
             first_seen   TEXT,
-            last_seen    TEXT
+            last_seen    TEXT,
+            image_url    TEXT
         )
     """)
+    # Migration : ajoute image_url si la table existait avant
+    try:
+        conn.execute("ALTER TABLE annonces ADD COLUMN image_url TEXT")
+        conn.commit()
+    except Exception:
+        pass
     conn.commit()
     return conn
 
@@ -55,21 +62,21 @@ def upsert_annonce(conn: sqlite3.Connection, annonce: Annonce) -> bool:
         conn.execute("""
             INSERT INTO annonces
             (url, source, title, price_eur, mileage_km, year, city,
-             distance_km, fuel, gearbox, description, score, first_seen, last_seen)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             distance_km, fuel, gearbox, description, score, first_seen, last_seen, image_url)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             annonce.url, annonce.source, annonce.title, annonce.price_eur,
             annonce.mileage_km, annonce.year, annonce.city, annonce.distance_km,
             annonce.fuel, annonce.gearbox, annonce.description, annonce.score,
-            now, now,
+            now, now, annonce.image_url,
         ))
     else:
         # Mise à jour du score, de la distance et du last_seen
         conn.execute("""
             UPDATE annonces
-            SET score = ?, distance_km = ?, last_seen = ?
+            SET score = ?, distance_km = ?, last_seen = ?, image_url = ?
             WHERE url = ?
-        """, (annonce.score, annonce.distance_km, now, annonce.url))
+        """, (annonce.score, annonce.distance_km, now, annonce.image_url, annonce.url))
 
     conn.commit()
     return is_new
@@ -105,7 +112,7 @@ def load_all(path: Path = DEFAULT_DB) -> list[dict]:
     conn = get_conn(path)
     cursor = conn.execute("""
         SELECT url, source, title, price_eur, mileage_km, year,
-               city, distance_km, fuel, gearbox, score, first_seen, last_seen
+               city, distance_km, fuel, gearbox, score, first_seen, last_seen, image_url
         FROM annonces
         ORDER BY score DESC, price_eur ASC
     """)

@@ -35,6 +35,7 @@ class Annonce:
     description: Optional[str] = None
     distance_km: Optional[float] = None
     score: Optional[float] = None
+    image_url: Optional[str] = None
 
 
 # ---------------------------------------------------------------------------
@@ -128,6 +129,10 @@ def _item_to_annonce(item: dict) -> Optional[Annonce]:
         title     = f"{v.get('make', '')} {v.get('model', '')} {v.get('modelVersionInput', '')}".strip()
         url       = BASE_URL + item.get("url", "")
 
+        # Première image disponible
+        images = item.get("images") or []
+        image_url = images[0] if images else None
+
         return Annonce(
             url         = url,
             source      = "autoscout24",
@@ -139,6 +144,7 @@ def _item_to_annonce(item: dict) -> Optional[Annonce]:
             fuel        = v.get("fuel"),
             gearbox     = v.get("transmission"),
             distance_km = loc.get("distanceToSearchLocationInKm"),
+            image_url   = image_url,
         )
     except Exception as e:
         print(f"[scraping] Erreur parsing item : {e}")
