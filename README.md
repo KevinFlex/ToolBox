@@ -190,13 +190,61 @@ python -m streamlit run app/streamlit_app.py
 
 ---
 
-## Branches
+## Gérer les branches Git
+
+**Branches du projet**
 
 | Branche | Rôle |
 |---|---|
 | `main` | Version stable |
 | `dev` | Intégration avant mise en prod |
 | `app/utilitaire` | Développement module véhicule |
+
+**Changer de branche**
+
+```powershell
+git checkout dev              # aller sur dev
+git checkout app/utilitaire   # aller sur la branche de dev du module véhicule
+git checkout main             # aller sur la version stable
+```
+
+**Travailler au quotidien (workflow normal)**
+
+```powershell
+# 1. Toujours partir de dev à jour
+git checkout dev
+git pull origin dev
+
+# 2. Coder sur la branche feature
+git checkout app/utilitaire
+
+# 3. Sauvegarder son travail
+git add .
+git commit -m "feat: description de ce que tu as fait"
+git push origin app/utilitaire
+
+# 4. Fusionner sur dev quand c'est prêt
+git checkout dev
+git merge app/utilitaire
+git push origin dev
+```
+
+**Passer une version stable sur main**
+
+```powershell
+git checkout main
+git merge dev
+git push origin main
+```
+
+**Voir l'état du repo**
+
+```powershell
+git status          # fichiers modifiés non committés
+git log --oneline   # historique des commits
+git branch          # liste des branches locales
+git branch -a       # toutes les branches (locales + distantes)
+```
 
 ---
 
