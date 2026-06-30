@@ -114,7 +114,6 @@ ToolBox/
 - [ ] Module finance — budget mensuel, cashflow, estimations
 - [ ] Module quotidien — météo, rappels, suivi heures
 - [ ] Fiches quotidiennes de révision — cartes mémo dans `app/quotidien/`
-- [ ] Alertes nouvelles annonces véhicule par email/notification
 - [ ] Déploiement Streamlit Cloud pour accès depuis n'importe où
 
 ---
