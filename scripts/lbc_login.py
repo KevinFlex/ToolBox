@@ -25,7 +25,8 @@ async def main():
     input("Appuie sur Entrée pour ouvrir le navigateur...")
 
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=False, slow_mo=50)
+        # Firefox est plus stable sur Windows que Chromium
+        browser = await p.firefox.launch(headless=False, slow_mo=50)
         ctx = await browser.new_context(
             user_agent=(
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
