@@ -40,7 +40,7 @@ from .scraping import Annonce
 # Configuration
 # ---------------------------------------------------------------------------
 
-COOKIES_PATH = Path(__file__).resolve().parents[4] / "data" / "processed" / "lbc_cookies.json"
+COOKIES_PATH = Path(__file__).resolve().parents[3] / "data" / "processed" / "lbc_cookies.json"
 
 BASE_URL = "https://www.leboncoin.fr"
 # Coordonnées Montpellier + rayon 180 km (en mètres pour leboncoin)
