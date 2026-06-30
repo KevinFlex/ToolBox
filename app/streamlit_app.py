@@ -12,6 +12,7 @@ import streamlit as st
 import pandas as pd
 
 from kevin_toolbox.vehicule.scraping import run_searches
+from kevin_toolbox.vehicule.lbc_scraping import fetch_leboncoin
 from kevin_toolbox.vehicule.scoring import score_all
 from kevin_toolbox.vehicule.geocoding import enrich_distances
 from kevin_toolbox.vehicule.storage import save_all, load_all, count
@@ -154,18 +155,57 @@ with st.sidebar:
 
     st.divider()
 
+    sources_search = st.multiselect(
+        "Sources",
+        ["AutoScout24", "leboncoin"],
+        default=["AutoScout24", "leboncoin"],
+        key="sources_search",
+    )
+
     if st.button("🔄 Nouvelle recherche", use_container_width=True):
-        with st.spinner("Recherche en cours…"):
-            annonces = run_searches()
-            annonces = enrich_distances(annonces)
-            annonces = score_all(annonces)
-            result = save_all(annonces)
-        if result["new"] > 0:
-            st.success(f"✅ {result['new']} nouvelles annonces !")
-            for a in result["new_annonces"]:
-                st.write(f"- [{a.title}]({a.url})")
-        else:
-            st.info("Aucune nouvelle annonce.")
+        all_annonces = []
+        search_errors = []
+
+        if "AutoScout24" in sources_search:
+            with st.spinner("AutoScout24 en cours…"):
+                try:
+                    as24 = run_searches()
+                    all_annonces.extend(as24)
+                    st.caption(f"AutoScout24 : {len(as24)} annonces")
+                except Exception as e:
+                    search_errors.append(f"AutoScout24 : {e}")
+
+        if "leboncoin" in sources_search:
+            with st.spinner("leboncoin en cours…"):
+                try:
+                    lbc = fetch_leboncoin()
+                    all_annonces.extend(lbc)
+                    st.caption(f"leboncoin : {len(lbc)} annonces")
+                except FileNotFoundError:
+                    search_errors.append(
+                        "leboncoin : cookies non configurés — lance `python scripts/lbc_login.py`"
+                    )
+                except RuntimeError as e:
+                    search_errors.append(f"leboncoin (cookies expirés) : renouvelle-les avec lbc_login.py")
+                except Exception as e:
+                    search_errors.append(f"leboncoin : {e}")
+
+        for err in search_errors:
+            st.warning(err)
+
+        if all_annonces:
+            with st.spinner("Géocodage et scoring…"):
+                all_annonces = enrich_distances(all_annonces)
+                all_annonces = score_all(all_annonces)
+                result = save_all(all_annonces)
+            if result["new"] > 0:
+                st.success(f"✅ {result['new']} nouvelles annonces !")
+                for a in result["new_annonces"]:
+                    st.write(f"- [{a.title}]({a.url})")
+            else:
+                st.info("Aucune nouvelle annonce.")
+        elif not search_errors:
+            st.error("Aucune annonce récupérée.")
 
 # ---------------------------------------------------------------------------
 # Chargement
