@@ -156,7 +156,6 @@ st.divider()
 
 if df_f.empty:
     st.warning("Aucune annonce ne correspond aux filtres.")
-    st.stop()
 
 # ---------------------------------------------------------------------------
 # Vue Cartes
