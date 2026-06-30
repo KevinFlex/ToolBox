@@ -253,3 +253,59 @@ if vue == "Tableau":
         st.markdown(f"**Distance Montpellier** : {dist}")
         st.markdown(f"**Score** : {int(row.get('score', 0))} / 10")
         st.link_button("Voir l'annonce sur AutoScout24", row.get("url", "#"), use_container_width=True)
+
+# ---------------------------------------------------------------------------
+# Page ajout manuel (leboncoin / autre source)
+# ---------------------------------------------------------------------------
+st.divider()
+with st.expander("➕ Ajouter une annonce manuellement (leboncoin, etc.)"):
+    st.caption("Colle les infos depuis n'importe quelle annonce — leboncoin, Facebook Marketplace, etc.")
+
+    with st.form("ajout_manuel"):
+        col1, col2 = st.columns(2)
+        with col1:
+            m_titre   = st.text_input("Titre *", placeholder="Ex : Renault Trafic L2H1 2.0 dCi")
+            m_prix    = st.number_input("Prix (€)", min_value=0, max_value=50000, value=0, step=100)
+            m_km      = st.number_input("Kilométrage", min_value=0, max_value=999999, value=0, step=1000)
+            m_annee   = st.number_input("Année", min_value=1990, max_value=2030, value=2010, step=1)
+        with col2:
+            m_ville   = st.text_input("Ville *", placeholder="Ex : Nîmes")
+            m_carbu   = st.selectbox("Carburant", ["Diesel", "Essence", "Électrique", "Hybride", "Autre"])
+            m_boite   = st.selectbox("Boîte", ["Manuelle", "Automatique"])
+            m_url     = st.text_input("URL de l'annonce *", placeholder="https://www.leboncoin.fr/...")
+        m_image   = st.text_input("URL image (optionnel)", placeholder="https://...")
+        m_notes   = st.text_area("Notes personnelles", placeholder="CT OK, distribution faite, à voir...")
+
+        submitted = st.form_submit_button("Ajouter à ma base", use_container_width=True)
+
+    if submitted:
+        if not m_titre or not m_ville or not m_url:
+            st.error("Titre, ville et URL sont obligatoires.")
+        else:
+            from kevin_toolbox.vehicule.scraping import Annonce
+            from kevin_toolbox.vehicule.scoring import score_annonce
+            from kevin_toolbox.vehicule.geocoding import distance_from_montpellier
+            from kevin_toolbox.vehicule.storage import upsert_annonce, get_conn
+
+            with st.spinner("Calcul de la distance et du score…"):
+                dist = distance_from_montpellier(m_ville)
+
+            nouvelle = Annonce(
+                url         = m_url,
+                source      = "manuel",
+                title       = m_titre,
+                price_eur   = m_prix or None,
+                mileage_km  = m_km or None,
+                year        = m_annee or None,
+                city        = m_ville,
+                fuel        = m_carbu,
+                gearbox     = m_boite,
+                description = m_notes or None,
+                distance_km = dist,
+                image_url   = m_image or None,
+            )
+            nouvelle = score_annonce(nouvelle)
+            conn = get_conn()
+            upsert_annonce(conn, nouvelle)
+            st.success(f"✅ Annonce ajoutée ! Score : {int(nouvelle.score)}/10 · Distance : {dist} km de Montpellier")
+            st.rerun()
