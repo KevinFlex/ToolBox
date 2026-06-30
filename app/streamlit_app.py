@@ -1,6 +1,6 @@
 """
 Interface Streamlit — kevin-toolbox / Module Véhicule Utilitaire
-Responsive, avec images, filtres paramétrables dont distance Montpellier.
+Responsive, avec images, filtres dynamiques lus depuis docs/utilitaire/filtres.md.
 """
 
 import sys
@@ -15,6 +15,7 @@ from kevin_toolbox.vehicule.scraping import run_searches
 from kevin_toolbox.vehicule.scoring import score_all
 from kevin_toolbox.vehicule.geocoding import enrich_distances
 from kevin_toolbox.vehicule.storage import save_all, load_all, count
+from kevin_toolbox.core.filters import load_filtres, update_filtre
 
 # ---------------------------------------------------------------------------
 # Config
@@ -72,24 +73,84 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------------------------
-# Sidebar — filtres
+# Sidebar — filtres dynamiques (lus depuis docs/utilitaire/filtres.md)
 # ---------------------------------------------------------------------------
+
+def render_sidebar_filtres(filtres: list[dict]) -> dict:
+    """
+    Génère dynamiquement les widgets Streamlit depuis la liste de filtres.
+    Retourne un dict {id: valeur} avec les valeurs saisies.
+    """
+    values = {}
+    for f in filtres:
+        if not f.get("actif", True):
+            continue
+        fid   = f["id"]
+        label = f.get("label", fid)
+        ftype = f.get("type", "slider")
+        desc  = f.get("description", "")
+
+        if ftype == "slider":
+            values[fid] = st.slider(
+                label,
+                min_value=int(f.get("min", 0)),
+                max_value=int(f.get("max", 100)),
+                value=int(f.get("default", f.get("min", 0))),
+                step=int(f.get("step", 1)),
+                help=desc,
+            )
+        elif ftype == "multiselect":
+            opts = f.get("options", [])
+            values[fid] = st.multiselect(
+                label,
+                options=opts,
+                default=f.get("default", opts),
+                help=desc,
+            )
+        elif ftype == "toggle":
+            values[fid] = st.toggle(
+                label,
+                value=bool(f.get("default", True)),
+                help=desc,
+            )
+    return values
+
+
 with st.sidebar:
     st.image("https://img.icons8.com/fluency/96/van.png", width=60)
     st.title("Filtres")
 
-    prix_max = st.slider("Prix max (€)", 500, 20000, 5500, step=100)
-    km_max = st.slider("Kilométrage max (km)", 50_000, 350_000, 220_000, step=10_000)
-    dist_max = st.slider("Distance max de Montpellier (km)", 50, 800, 300, step=25)
-    score_min = st.slider("Score minimum", 0, 10, 5)
+    # Chargement des filtres depuis docs/utilitaire/filtres.md
+    filtres = load_filtres("utilitaire")
+    filtre_values = render_sidebar_filtres(filtres)
 
-    modeles = st.multiselect(
-        "Modèles",
-        ["Trafic", "Jumpy", "Expert"],
-        default=["Trafic", "Jumpy", "Expert"],
-    )
+    # Récupération des valeurs avec fallback
+    prix_max  = filtre_values.get("prix_max", 5500)
+    km_max    = filtre_values.get("km_max", 220000)
+    dist_max  = filtre_values.get("dist_max", 300)
+    score_min = filtre_values.get("score_min", 5)
+    modeles   = filtre_values.get("modeles", ["Trafic", "Jumpy", "Expert"])
 
     vue = st.radio("Affichage", ["Cartes", "Tableau"], horizontal=True)
+
+    # --- Gestion des filtres ---
+    st.divider()
+    with st.expander("⚙️ Gérer les filtres"):
+        st.caption("Active/désactive ou modifie les valeurs par défaut. Sauvegardé dans `docs/utilitaire/filtres.md`.")
+        for f in filtres:
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                st.markdown(f"**{f.get('label', f['id'])}**")
+                st.caption(f.get("description", ""))
+            with col2:
+                actif = st.toggle(
+                    "Actif",
+                    value=f.get("actif", True),
+                    key=f"toggle_{f['id']}",
+                )
+                if actif != f.get("actif", True):
+                    update_filtre("utilitaire", f["id"], actif=actif)
+                    st.rerun()
 
     st.divider()
 
