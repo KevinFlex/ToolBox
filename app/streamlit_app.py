@@ -78,7 +78,7 @@ with st.sidebar:
     st.image("https://img.icons8.com/fluency/96/van.png", width=60)
     st.title("Filtres")
 
-    prix_max = st.slider("Prix max (€)", 500, 8000, 5500, step=100)
+    prix_max = st.slider("Prix max (€)", 500, 20000, 5500, step=100)
     km_max = st.slider("Kilométrage max (km)", 50_000, 350_000, 220_000, step=10_000)
     dist_max = st.slider("Distance max de Montpellier (km)", 50, 800, 300, step=25)
     score_min = st.slider("Score minimum", 0, 10, 5)
