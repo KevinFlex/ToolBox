@@ -1,0 +1,12 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "kevin-toolbox"
+version = "0.1.0"
+description = "Gestionnaire d'outils du quotidien, recherche avancée pour projets concrets"
+requires-python = ">=3.10"
+
+[tool.setuptools.packages.find]
+where = ["src"]
