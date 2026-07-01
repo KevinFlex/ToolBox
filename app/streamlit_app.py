@@ -15,7 +15,7 @@ from kevin_toolbox.vehicule.scraping import run_searches
 from kevin_toolbox.vehicule.lbc_scraping import fetch_leboncoin
 from kevin_toolbox.vehicule.scoring import score_all
 from kevin_toolbox.vehicule.geocoding import enrich_distances
-from kevin_toolbox.vehicule.storage import save_all, load_all, count
+from kevin_toolbox.vehicule.storage import save_all, load_all, count, export_top_annonces
 from kevin_toolbox.core.filters import load_filtres, update_filtre
 
 # ---------------------------------------------------------------------------
@@ -198,12 +198,14 @@ with st.sidebar:
                 all_annonces = enrich_distances(all_annonces)
                 all_annonces = score_all(all_annonces)
                 result = save_all(all_annonces)
+                export_path = export_top_annonces(n=20)
             if result["new"] > 0:
                 st.success(f"✅ {result['new']} nouvelles annonces !")
                 for a in result["new_annonces"]:
                     st.write(f"- [{a.title}]({a.url})")
             else:
                 st.info("Aucune nouvelle annonce.")
+            st.caption(f"💾 Top 20 exporté → data/exports/top_annonces.json")
         elif not search_errors:
             st.error("Aucune annonce récupérée.")
 

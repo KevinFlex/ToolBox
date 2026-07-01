@@ -4,12 +4,15 @@ Persistance des annonces dans une base SQLite locale (data/processed/vehicule.db
 Détecte les nouvelles annonces à chaque run (comparaison par URL).
 """
 
+import json
 import sqlite3
 from datetime import datetime
 from pathlib import Path
 from .scraping import Annonce
 
-DEFAULT_DB = Path(__file__).resolve().parents[4] / "data" / "processed" / "vehicule.db"
+ROOT = Path(__file__).resolve().parents[3]
+DEFAULT_DB = ROOT / "data" / "processed" / "vehicule.db"
+EXPORT_PATH = ROOT / "data" / "exports" / "top_annonces.json"
 
 
 def get_conn(path: Path = DEFAULT_DB) -> sqlite3.Connection:
@@ -138,3 +141,38 @@ def count(path: Path = DEFAULT_DB) -> int:
     """Retourne le nombre total d'annonces en base."""
     conn = get_conn(path)
     return conn.execute("SELECT COUNT(*) FROM annonces").fetchone()[0]
+
+
+def export_top_annonces(n: int = 20, db_path: Path = DEFAULT_DB, export_path: Path = EXPORT_PATH) -> Path:
+    """
+    Exporte les n meilleures annonces (par score) dans un fichier JSON.
+
+    Ce fichier est commité dans git (data/exports/top_annonces.json) afin
+    d'être lisible par Streamlit Cloud sans avoir besoin de re-scraper.
+    Il est mis à jour à chaque nouvelle recherche depuis l'interface.
+
+    Args:
+        n          : nombre d'annonces à exporter (défaut : 20)
+        db_path    : chemin vers vehicule.db
+        export_path: chemin de destination du fichier JSON
+
+    Returns:
+        Le Path du fichier écrit.
+    """
+    conn = get_conn(db_path)
+    cursor = conn.execute("""
+        SELECT url, source, title, price_eur, mileage_km, year,
+               city, distance_km, fuel, gearbox, score, first_seen, last_seen, image_url
+        FROM annonces
+        ORDER BY score DESC, price_eur ASC
+        LIMIT ?
+    """, (n,))
+    cols = [d[0] for d in cursor.description]
+    annonces = [dict(zip(cols, row)) for row in cursor.fetchall()]
+
+    export_path.parent.mkdir(parents=True, exist_ok=True)
+    export_path.write_text(
+        json.dumps(annonces, ensure_ascii=False, indent=2),
+        encoding="utf-8"
+    )
+    return export_path

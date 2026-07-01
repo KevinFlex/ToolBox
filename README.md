@@ -121,6 +121,11 @@ ToolBox/
 │   │   └── lbc_cookies.json   Cookies Firefox pour leboncoin (Cookie-Editor).
 │   │                           Non versionné dans git — données sensibles de session.
 │   │                           À renouveler via scripts/lbc_login.py quand leboncoin bloque.
+│   ├── exports/
+│   │   └── top_annonces.json  Les 20 meilleures annonces exportées après chaque scraping.
+│   │                           Versionné dans git — permet à Streamlit Cloud d'afficher
+│   │                           les résultats sans re-scraper (le scraper tourne sur ton PC,
+│   │                           pas sur le serveur).
 │   ├── raw/                   Données brutes non traitées (réservé pour plus tard).
 │   └── references/            Fichiers de référence : grilles de prix, barèmes...
 │
