@@ -12,4 +12,3 @@ data/exports/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 !data/exports/.gitkeep
-!data/exports/top_annonces.json

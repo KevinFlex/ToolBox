@@ -123,9 +123,8 @@ ToolBox/
 │   │                           À renouveler via scripts/lbc_login.py quand leboncoin bloque.
 │   ├── exports/
 │   │   └── top_annonces.json  Les 20 meilleures annonces exportées après chaque scraping.
-│   │                           Versionné dans git — permet à Streamlit Cloud d'afficher
-│   │                           les résultats sans re-scraper (le scraper tourne sur ton PC,
-│   │                           pas sur le serveur).
+│   │                           Non versionné dans git — c'est une donnée, pas du code.
+│   │                           Généré localement sur ton PC à chaque nouvelle recherche.
 │   ├── raw/                   Données brutes non traitées (réservé pour plus tard).
 │   └── references/            Fichiers de référence : grilles de prix, barèmes...
 │
